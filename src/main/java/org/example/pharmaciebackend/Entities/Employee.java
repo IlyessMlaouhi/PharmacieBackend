@@ -20,6 +20,7 @@ public class Employee {
     private String name;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private Occupation occupation;
 
     @Column(unique = true,nullable = false)
@@ -30,4 +31,6 @@ public class Employee {
 
     @Column(nullable = false)
     private String password;
+    @Column(nullable = false)
+    private double weeklyHours;
 }
