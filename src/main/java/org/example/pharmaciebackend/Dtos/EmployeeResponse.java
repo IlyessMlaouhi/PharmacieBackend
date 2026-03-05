@@ -11,9 +11,9 @@ import org.example.pharmaciebackend.Entities.Occupation;
 public class EmployeeResponse {
 
     private Long id;
-    private String firstName;
-    private String lastName;
+    private String name;
     private Occupation occupation;
+    private String phone;
     private String email;
     private double weeklyHours;
 }

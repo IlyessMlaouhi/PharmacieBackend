@@ -61,7 +61,7 @@ public class EmployeeService {
             throw new EmployeeException("Email '" + request.getEmail() + "' is already used by another employee.");
         }
 
-        employee.setName(request.getFirstName());
+        employee.setName(request.getName());
         employee.setOccupation(request.getOccupation());
         employee.setEmail(request.getEmail());
         employee.setWeeklyHours(request.getWeeklyHours());
@@ -84,17 +84,19 @@ public class EmployeeService {
 
     private Employee mapToEntity(EmployeeRequest request) {
         Employee employee = new Employee();
-        employee.setName(request.getFirstName());
+        employee.setName(request.getName());
         employee.setOccupation(request.getOccupation());
         employee.setEmail(request.getEmail());
         employee.setWeeklyHours(request.getWeeklyHours());
+        employee.setPhone(request.getPhone());
         return employee;
     }
 
     public EmployeeResponse mapToResponse(Employee employee) {
         EmployeeResponse response = new EmployeeResponse();
         response.setId(employee.getId());
-        response.setFirstName(employee.getName());
+        response.setName(employee.getName());
+        response.setPhone(employee.getPhone());
         response.setOccupation(employee.getOccupation());
         response.setEmail(employee.getEmail());
         response.setWeeklyHours(employee.getWeeklyHours());

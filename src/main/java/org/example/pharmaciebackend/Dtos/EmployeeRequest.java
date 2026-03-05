@@ -1,6 +1,8 @@
 package org.example.pharmaciebackend.Dtos;
 
 
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
@@ -15,17 +17,15 @@ import org.hibernate.annotations.TenantId;
 @NoArgsConstructor
 public class EmployeeRequest {
 
-    @NotBlank(message = "First name is required")
-    private String firstName;
+    @NotBlank(message = "name is required")
+    private String name;
 
-    @NotBlank(message = "Last name is required")
-    private String lastName;
-
-    @NotBlank(message = "Role is required")
     private Occupation occupation;
 
     @NotBlank(message = "Email is required")
     private String email;
+
+    private String phone;
 
     @Positive(message = "Weekly hours must be positive")
     @Max(value = 60, message = "Weekly hours cannot exceed 60")
