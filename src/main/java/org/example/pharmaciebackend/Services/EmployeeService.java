@@ -19,7 +19,6 @@ public class EmployeeService {
         this.employeeRepository = employeeRepository;
     }
 
-    // ─── CREATE ───────────────────────────────────────────────────────────────
 
     public EmployeeResponse createEmployee(EmployeeRequest request) {
         if (employeeRepository.existsByEmail(request.getEmail())) {
@@ -30,7 +29,6 @@ public class EmployeeService {
         return mapToResponse(saved);
     }
 
-    // ─── READ ALL ─────────────────────────────────────────────────────────────
 
     public List<EmployeeResponse> getAllEmployees() {
         List<Employee> employees = employeeRepository.findAll();
@@ -42,7 +40,6 @@ public class EmployeeService {
                 .collect(Collectors.toList());
     }
 
-    // ─── READ BY ID ───────────────────────────────────────────────────────────
 
     public EmployeeResponse getEmployeeById(Long id) {
         Employee employee = employeeRepository.findById(id)
@@ -50,7 +47,6 @@ public class EmployeeService {
         return mapToResponse(employee);
     }
 
-    // ─── UPDATE ───────────────────────────────────────────────────────────────
 
     public EmployeeResponse updateEmployee(Long id, EmployeeRequest request) {
         Employee employee = employeeRepository.findById(id)
@@ -70,7 +66,6 @@ public class EmployeeService {
         return mapToResponse(updated);
     }
 
-    // ─── DELETE ───────────────────────────────────────────────────────────────
 
     public void deleteEmployee(Long id) {
         if (!employeeRepository.existsById(id)) {
@@ -79,8 +74,6 @@ public class EmployeeService {
         employeeRepository.deleteById(id);
     }
 
-    // ─── MAPPER HELPERS ───────────────────────────────────────────────────────
-    // Think of these like Angular's pipe or a MapStruct mapper
 
     private Employee mapToEntity(EmployeeRequest request) {
         Employee employee = new Employee();

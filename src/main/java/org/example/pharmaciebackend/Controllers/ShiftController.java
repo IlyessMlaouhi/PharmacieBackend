@@ -1,5 +1,6 @@
 package org.example.pharmaciebackend.Controllers;
 
+import jakarta.mail.MessagingException;
 import org.example.pharmaciebackend.Dtos.ShiftRequest;
 import org.example.pharmaciebackend.Dtos.ShiftResponse;
 import org.example.pharmaciebackend.Services.ShiftService;
@@ -22,16 +23,12 @@ public class ShiftController {
         this.shiftService = shiftService;
     }
 
-    // POST /api/v1/shifts
     @PostMapping
-    public ResponseEntity<ShiftResponse> createShift(@Valid @RequestBody ShiftRequest request) {
+    public ResponseEntity<ShiftResponse> createShift(@Valid @RequestBody ShiftRequest request) throws MessagingException {
         ShiftResponse response = shiftService.createShift(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(201).body(response);
     }
 
-    // GET /api/v1/shifts
-    // Optional query params: ?from=2025-01-01&to=2025-01-07
-    // Flutter calendar calls this to load shifts for a given week/month
     @GetMapping
     public ResponseEntity<List<ShiftResponse>> getShifts(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -43,8 +40,6 @@ public class ShiftController {
         return ResponseEntity.ok(shiftService.getAllShifts());
     }
 
-    // GET /api/v1/shifts/employee/{employeeId}
-    // Optional query params: ?from=2025-01-01&to=2025-01-07
     @GetMapping("/employee/{employeeId}")
     public ResponseEntity<List<ShiftResponse>> getShiftsByEmployee(
             @PathVariable Long employeeId,
@@ -57,15 +52,14 @@ public class ShiftController {
         return ResponseEntity.ok(shiftService.getShiftsByEmployee(employeeId));
     }
 
-    // PUT /api/v1/shifts/{id}
+
     @PutMapping("/{id}")
     public ResponseEntity<ShiftResponse> updateShift(
             @PathVariable Long id,
-            @Valid @RequestBody ShiftRequest request) {
+            @Valid @RequestBody ShiftRequest request) throws MessagingException {
         return ResponseEntity.ok(shiftService.updateShift(id, request));
     }
 
-    // DELETE /api/v1/shifts/{id}
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteShift(@PathVariable Long id) {
         shiftService.deleteShift(id);

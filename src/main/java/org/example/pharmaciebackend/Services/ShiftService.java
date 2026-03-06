@@ -1,5 +1,6 @@
 package org.example.pharmaciebackend.Services;
 
+import jakarta.mail.MessagingException;
 import org.example.pharmaciebackend.Dtos.ShiftRequest;
 import org.example.pharmaciebackend.Dtos.ShiftResponse;
 import org.example.pharmaciebackend.Entities.Employee;
@@ -30,9 +31,8 @@ public class ShiftService {
         this.emailService = emailService;
     }
 
-    // ─── CREATE ───────────────────────────────────────────────────────────────
 
-    public ShiftResponse createShift(ShiftRequest request) {
+    public ShiftResponse createShift(ShiftRequest request) throws MessagingException {
         Employee employee = employeeRepository.findById(request.getEmployeeId())
                 .orElseThrow(() -> new EmployeeException("Employee with ID " + request.getEmployeeId() + " not found."));
 
@@ -46,7 +46,6 @@ public class ShiftService {
         return mapToResponse(saved);
     }
 
-    // ─── READ ALL ─────────────────────────────────────────────────────────────
 
     public List<ShiftResponse> getAllShifts() {
         return shiftRepository.findAll()
@@ -55,7 +54,6 @@ public class ShiftService {
                 .collect(Collectors.toList());
     }
 
-    // ─── READ BY EMPLOYEE ─────────────────────────────────────────────────────
 
     public List<ShiftResponse> getShiftsByEmployee(Long employeeId) {
         if (!employeeRepository.existsById(employeeId)) {
@@ -67,8 +65,6 @@ public class ShiftService {
                 .collect(Collectors.toList());
     }
 
-    // ─── READ BY DATE RANGE (used for weekly/monthly calendar view) ───────────
-    // Flutter calendar will call this to load shifts for a given week or month
 
     public List<ShiftResponse> getShiftsByDateRange(LocalDate from, LocalDate to) {
         return shiftRepository.findByDateBetween(from, to)
@@ -77,7 +73,6 @@ public class ShiftService {
                 .collect(Collectors.toList());
     }
 
-    // ─── READ BY EMPLOYEE + DATE RANGE ────────────────────────────────────────
 
     public List<ShiftResponse> getShiftsByEmployeeAndDateRange(Long employeeId, LocalDate from, LocalDate to) {
         if (!employeeRepository.existsById(employeeId)) {
@@ -89,9 +84,8 @@ public class ShiftService {
                 .collect(Collectors.toList());
     }
 
-    // ─── UPDATE ───────────────────────────────────────────────────────────────
 
-    public ShiftResponse updateShift(Long id, ShiftRequest request) {
+    public ShiftResponse updateShift(Long id, ShiftRequest request) throws MessagingException {
         Shift existing = shiftRepository.findById(id)
                 .orElseThrow(() -> new ShiftException("Shift with ID " + id + " not found."));
 
@@ -99,20 +93,21 @@ public class ShiftService {
                 .orElseThrow(() -> new EmployeeException("Employee with ID " + request.getEmployeeId() + " not found."));
 
         validateShiftTimes(request);
-        validateNoOverlap(request, id);          // exclude current shift from overlap check
-        validateWeeklyHours(employee, request, id); // exclude current shift from hours count
+        validateNoOverlap(request, id);
+        validateWeeklyHours(employee, request, id);
 
         existing.setEmployee(employee);
         existing.setDate(request.getDate());
         existing.setStartTime(request.getStartTime());
         existing.setEndTime(request.getEndTime());
         existing.setDescription(request.getDescription());
+        emailService.sendShiftNotification(employee.getEmail(), employee.getName(),existing);
+
 
         Shift updated = shiftRepository.save(existing);
         return mapToResponse(updated);
     }
 
-    // ─── DELETE ───────────────────────────────────────────────────────────────
 
     public void deleteShift(Long id) {
         if (!shiftRepository.existsById(id)) {
@@ -121,22 +116,18 @@ public class ShiftService {
         shiftRepository.deleteById(id);
     }
 
-    // ─── VALIDATION ───────────────────────────────────────────────────────────
 
-    // Rule 1: startTime must be before endTime
     private void validateShiftTimes(ShiftRequest request) {
         if (!request.getStartTime().isBefore(request.getEndTime())) {
             throw new ShiftException("Start time must be before end time.");
         }
     }
 
-    // Rule 2: no two shifts for the same employee overlap on the same day
     private void validateNoOverlap(ShiftRequest request, Long excludeShiftId) {
         List<Shift> existingShifts = shiftRepository.findByEmployeeIdAndDate(
                 request.getEmployeeId(), request.getDate());
 
         for (Shift existing : existingShifts) {
-            // skip the shift we're currently editing
             if (excludeShiftId != null && existing.getId().equals(excludeShiftId)) continue;
 
             boolean overlaps = request.getStartTime().isBefore(existing.getEndTime())
@@ -151,22 +142,18 @@ public class ShiftService {
         }
     }
 
-    // Rule 3: total hours in that week must not exceed employee.weeklyHours
     private void validateWeeklyHours(Employee employee, ShiftRequest request, Long excludeShiftId) {
-        // get Monday and Sunday of the week containing request.getDate()
         LocalDate weekStart = request.getDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate weekEnd   = request.getDate().with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
 
         List<Shift> weekShifts = shiftRepository.findByEmployeeIdAndDateBetween(
                 employee.getId(), weekStart, weekEnd);
 
-        // sum existing shifts (excluding the one being updated)
         double totalHours = weekShifts.stream()
                 .filter(s -> excludeShiftId == null || !s.getId().equals(excludeShiftId))
                 .mapToDouble(s -> Duration.between(s.getStartTime(), s.getEndTime()).toMinutes() / 60.0)
                 .sum();
 
-        // add the new shift's duration
         double newShiftHours = Duration.between(request.getStartTime(), request.getEndTime()).toMinutes() / 60.0;
         double total = totalHours + newShiftHours;
 
@@ -177,7 +164,6 @@ public class ShiftService {
         }
     }
 
-    // ─── MAPPER HELPERS ───────────────────────────────────────────────────────
 
     private Shift mapToEntity(ShiftRequest request, Employee employee) {
         Shift shift = new Shift();
@@ -198,7 +184,6 @@ public class ShiftService {
         response.setStartTime(shift.getStartTime());
         response.setEndTime(shift.getEndTime());
         response.setDescription(shift.getDescription());
-        // convenience field for Flutter to display duration e.g. "7.5h"
         double hours = Duration.between(shift.getStartTime(), shift.getEndTime()).toMinutes() / 60.0;
         response.setDurationHours(Math.round(hours * 10.0) / 10.0);
         return response;
